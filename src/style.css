@@ -1,10 +1,10 @@
 #root {
-  margin-bottom: 50vh;
+  /* margin-bottom: 50vh; */
 }
 
 iframe[data-xstate] {
   width: 100vw;
-  height: 50vh;
+  height: 30vh;
   border: 0;
   position: fixed;
   left: 0;

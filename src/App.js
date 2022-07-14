@@ -1,33 +1,36 @@
-import { Suspense } from "react";
 import { createMachine } from "xstate";
-import { inspect } from "@xstate/inspect";
 import { atomWithMachine } from "jotai/xstate";
 import { useAtom, atom, Provider } from "jotai";
 
 import "./style.css";
+import { useEffect } from "react";
 
-inspect();
+const createLightMachine = (initial = "green") =>
+  createMachine({
+    id: "lightMachine",
+    initial,
+    states: {
+      green: { on: { NEXT: "yellow" } },
+      yellow: { on: { NEXT: "red" } },
+      red: { on: { NEXT: "green" } },
+    },
+  });
 
-const lightMachine = createMachine({
-  id: "lightMachine",
-  initial: "green",
-  states: {
-    green: { on: { NEXT: "yellow" } },
-    yellow: { on: { NEXT: "red" } },
-    red: { on: { NEXT: "green" } },
-  },
-});
+const createLightAtom = (initial) =>
+  atomWithMachine(() => createLightMachine(initial), {
+    devTools: true,
+  });
 
-const lightAtom = atomWithMachine(lightMachine, { devTools: true });
+const lightAtomAtom = atom(createLightAtom("red"));
 
-const fetchLightMessage = async (light) => {
-  await new Promise((r) => setTimeout(r, 1500));
+const fetchLightMessage = (light) => {
   return `Hello ${light}`;
 };
 
-const asyncMessage = atom(async (get) => {
+const asyncMessage = atom((get) => {
+  const lightAtom = get(lightAtomAtom);
   const light = get(lightAtom).value;
-  const message = await fetchLightMessage(light);
+  const message = fetchLightMessage(light);
   return message;
 });
 
@@ -40,23 +43,11 @@ const LightMessage = () => {
   );
 };
 
-const Loader = ({ y = 15 }) => (
-  <g>
-    <circle fill="gray" cx={110} cy={y}>
-      <animate
-        attributeName="r"
-        values="3;8;4;6;3"
-        dur="800ms"
-        repeatCount="indefinite"
-      />
-    </circle>
-    <text x={120} y={y + 5}>
-      Loading...
-    </text>
-  </g>
-);
-
-const Light = () => {
+const Light = ({ initial = "red" }) => {
+  const [lightAtom, setLightAtom] = useAtom(lightAtomAtom);
+  useEffect(() => {
+    setLightAtom(createLightAtom(initial));
+  }, [initial, setLightAtom]);
   const [state, send] = useAtom(lightAtom);
 
   const handleClick = () => {
@@ -65,9 +56,7 @@ const Light = () => {
   return (
     <svg width={200} height={100}>
       <circle fill={state.value} onClick={handleClick} r={40} cx={40} cy={40} />
-      <Suspense fallback={<Loader />}>
-        <LightMessage />
-      </Suspense>
+      <LightMessage />
     </svg>
   );
 };
@@ -76,18 +65,15 @@ function App() {
     <>
       <div>
         <Provider>
-          <Light />
-          <Light />
+          <Light initial="green" />
         </Provider>
       </div>
       <div>
         <Provider>
-          <Light />
-          <Light />
+          <Light initial="red" />
         </Provider>
       </div>
     </>
   );
 }
-
 export default App;

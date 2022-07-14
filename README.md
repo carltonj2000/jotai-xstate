@@ -1,5 +1,7 @@
 # Jotai XState React State
 
+App is XState with Initial Values and App2 is without.
+
 ## Code History
 
 ```bash
